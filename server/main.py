@@ -2,14 +2,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from caching import CacheMiddleware
 import logging
-from server.database import conn, create_table
-from server.routes import app as routes_app
+from database import conn, create_table
+from routes import app as routes_app
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-app.add_middleware(CacheMiddleware)
+# app.add_middleware(CacheMiddleware)
 
 origins = [
     "http://localhost:3000",

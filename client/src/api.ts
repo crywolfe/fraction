@@ -63,3 +63,13 @@ export const fetchPlayerDescription = async (playerName: string): Promise<string
     return 'Description unavailable';
   }
 };
+
+export const updatePlayer = async (player_id: number, player: PlayerStats): Promise<any> => {
+  try {
+    const response = await axios.put(`${BASE_URL}/players/${player_id}`, player);
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to update player with id ${player_id}`, error);
+    throw error;
+  }
+};

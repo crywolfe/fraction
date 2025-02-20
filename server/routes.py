@@ -5,7 +5,7 @@ import random
 from typing import List, Dict, Any
 import logging
 import json
-from server.database import conn
+from database import conn
 
 logger = logging.getLogger(__name__)
 
@@ -39,16 +39,16 @@ async def get_players(
                         # Extract name, position, and team
                         name = player.get('name', 'Unknown')
                         position = player.get('position', 'Unknown')
-                        team = player.get('team', 'Unknown')
                         
                         # Store the rest of the player data as JSON
+                        logger.info(f"Player data before JSON conversion: {player}")
                         data = json.dumps(player)
-                        
+                        logger.info(f"Type of data before database insertion: {type(data)}")
                         # Insert player data into the database
                         cursor.execute("""
-                            INSERT INTO players (name, position, team, data)
-                            VALUES (%s, %s, %s, %s)
-                        """, (name, position, team, data))
+                            INSERT INTO players (player_name, position, data)
+                            VALUES (%s, %s, %s)
+                        """, (name, position, data))
                     conn.commit()
                     logger.info("Players stored in the database")
                 except Exception as e:
@@ -68,7 +68,7 @@ async def get_players(
                     
                     # Fetch players from the database with pagination
                     cursor.execute("""
-                        SELECT id, name, position, team, data FROM players
+                        SELECT id, player_name, position, data FROM players
                         LIMIT %s OFFSET %s
                     """, (page_size, offset))
                     
@@ -79,10 +79,9 @@ async def get_players(
                     for record in player_records:
                         player = {
                             "id": record[0],
-                            "name": record[1],
+                            "player_name": record[1],
                             "position": record[2],
-                            "team": record[3],
-                            **json.loads(record[4])  # Merge the JSON data into the player dictionary
+                            **record[3]  # Merge the JSON data into the player dictionary
                         }
                         players.append(player)
                     
@@ -120,6 +119,7 @@ async def update_player(player_id: int, player: Dict[str, Any] = Body(...)):
     if conn:
         cursor = conn.cursor()
         try:
+            logger.info(f"Player data before JSON conversion: {player}")
             # Convert player data to JSON
             player_data = json.dumps(player)
             

@@ -10,10 +10,31 @@ DB_URL = os.environ.get("DB_URL")
 def create_connection():
     conn = None
     try:
-        conn = psycopg2.connect(DB_URL)
+        # Explicitly parse and log connection parameters
+        from urllib.parse import urlparse, parse_qs
+        parsed_url = urlparse(DB_URL)
+        query_params = parse_qs(parsed_url.query)
+        
+        # Detailed logging of connection parameters
+        logger.info("Attempting database connection:")
+        logger.info(f"Raw DB_URL: {DB_URL}")
+        logger.info(f"Scheme: {parsed_url.scheme}")
+        logger.info(f"Hostname: {parsed_url.hostname}")
+        logger.info(f"Port: {parsed_url.port or 5432}")
+        logger.info(f"Username: {parsed_url.username}")
+        logger.info(f"Database: {parsed_url.path.lstrip('/')}")
+        
+        # Attempt connection with explicit parameters
+        conn = psycopg2.connect(
+            host=parsed_url.hostname,
+            port=parsed_url.port or 5432,
+            database=parsed_url.path.lstrip('/'),
+            user=parsed_url.username,
+            password=parsed_url.password
+        )
         logger.info("Database connection successful")
-    except OperationalError as e:
-        logger.error(f"The error '{e}' occurred")
+    except Exception as e:
+        logger.error(f"Database connection error: {type(e).__name__} - {str(e)}")
     return conn
 
 def create_table(conn):
