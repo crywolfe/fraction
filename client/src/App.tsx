@@ -1,7 +1,7 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
-import { fetchPlayers, fetchPlayerDescription, PlayerStats } from './api';
+import { fetchPlayers, fetchPlayerDescription, PlayerStats, updatePlayer } from './api';
 
-const PlayerCard: React.FC<{ player: PlayerStats }> = ({ player }) => {
+const PlayerCard: React.FC<{ player: PlayerStats, playerId: number, setPlayers: React.Dispatch<React.SetStateAction<PlayerStats[]>> }> = ({ player, playerId, setPlayers }) => {
   const [description, setDescription] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showDescription, setShowDescription] = useState(false);
@@ -37,16 +37,16 @@ const PlayerCard: React.FC<{ player: PlayerStats }> = ({ player }) => {
     setEditPlayerData({ ...editPlayerData, [stat]: parseFloat(e.target.value) });
   };
 
-  const handleSave = () => {
-    // Call the API to update the player data
-    // updatePlayer(player.id, editPlayerData) // Assuming player has an 'id' property
-    //   .then(() => {
-    //     setIsEditing(false);
-    //   })
-    //   .catch(error => {
-    //     console.error("Failed to update player", error);
-    //   });
-    setIsEditing(false); // For now, just disable editing
+  const handleSave = async () => {
+    try {
+      await updatePlayer(playerId, editPlayerData);
+      setPlayers(prevPlayers =>
+        prevPlayers.map(p => (p.player_name === player.player_name ? editPlayerData : p))
+      );
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Failed to update player", error);
+    }
   };
 
   const handleCancel = () => {
@@ -359,7 +359,7 @@ const App: React.FC = () => {
       <h1>Player Roster</h1>
       <div className="player-list">
         {players.map(player => (
-          <PlayerCard key={player.player_name} player={player} />
+          <PlayerCard key={player.player_name} player={player} playerId={player.id} setPlayers={setPlayers} />
         ))}
       </div>
       <div className="pagination">
