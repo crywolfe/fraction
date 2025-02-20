@@ -11,7 +11,7 @@ const PlayerCard: React.FC<{ player: PlayerStats, playerId: number, setPlayers: 
   const loadDescription = async () => {
     setIsLoading(true);
     try {
-      const desc = await fetchPlayerDescription(player.player_name);
+      const desc = await fetchPlayerDescription(playerId);
       setDescription(desc);
     } catch {
       setDescription(null);

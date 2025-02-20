@@ -55,9 +55,9 @@ export const fetchPlayers = async (page = 1, pageSize = 10): Promise<PlayersResp
   }
 };
 
-export const fetchPlayerDescription = async (playerName: string): Promise<string> => {
+export const fetchPlayerDescription = async (playerId: number): Promise<string> => {
   try {
-    const response = await axios.get<PlayerDescription>(`${BASE_URL}/player/${playerName}/description`);
+    const response = await axios.get<PlayerDescription>(`${BASE_URL}/player/${playerId}/description`);
     return response.data.description;
   } catch (error) {
     console.error('Failed to fetch player description', error);

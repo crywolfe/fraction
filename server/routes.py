@@ -2,12 +2,18 @@ from fastapi import FastAPI, HTTPException, Query, Body
 import httpx
 import ollama
 import random
+import os
 from typing import List, Dict, Any
 import logging
 import json
 from database import conn
 
 logger = logging.getLogger(__name__)
+
+# Configure Ollama client with host from environment
+OLLAMA_HOST = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
+ollama.host = OLLAMA_HOST
+logger.info(f"Configured Ollama with host: {OLLAMA_HOST}")
 
 app = FastAPI()
 
@@ -157,54 +163,79 @@ async def generate_player_description(player_id: int):
     """
     logger.info(f"Generating description for player ID: {player_id}")
     
-    # First, fetch the players to get player details
-    async with httpx.AsyncClient() as client:
+    if conn:
+        cursor = conn.cursor()
         try:
-            response = await client.get("https://api.hirefraction.com/api/test/baseball")
-            response.raise_for_status()
-            players = response.json()
+            # Fetch player from database
+            cursor.execute("""
+                SELECT player_name, position, data
+                FROM players
+                WHERE id = %s
+            """, (player_id,))
             
-            # Find the specific player
-            player = next((p for p in players if p.get('id') == player_id), None)
+            player_record = cursor.fetchone()
             
-            if not player:
+            if not player_record:
                 logger.warning(f"Player not found with ID: {player_id}")
                 raise HTTPException(status_code=404, detail="Player not found")
             
+            # Extract player details
+            player_name, position, data = player_record
+            player_data = json.loads(data)
+            
             # Prepare prompt for description generation
             prompt = f"""Generate a concise 280-character description for a baseball player with these details:
-            Name: {player.get('name', 'Unknown')}
-            Position: {player.get('position', 'Unknown')}
-            Team: {player.get('team', 'Unknown')}
+            Name: {player_name}
+            Position: {position}
+            Team: {player_data.get('team', 'Unknown')}
             
             Include career highlights, playing style, and personal background."""
             
             try:
+                logger.info(f"Attempting to generate description using Ollama for player {player_id}")
+                logger.info(f"Prompt: {prompt}")
+                
                 # Generate description using Ollama
-                response = ollama.chat(
-                    model='llama3.2:3b',
-                    messages=[{'role': 'user', 'content': prompt}]
-                )
-                
-                # Truncate to 280 characters
-                description = response['message']['content'][:280]
-                
-                logger.info(f"Description generated for player {player_id}")
-                return {"description": description}
+                try:
+                    response = ollama.chat(
+                        model='llama3.2',  # Using llama2 model
+                        messages=[{'role': 'user', 'content': prompt}]
+                    )
+                    logger.info(f"Raw Ollama response: {response}")
+                    
+                    # Truncate to 280 characters
+                    description = response['message']['content'][:280]
+                    logger.info(f"Generated description for player {player_id}: {description}")
+                    
+                    # Update the player data to include the description
+                    player_data['description'] = description
+                    
+                    # Save the updated data back to the database
+                    cursor.execute("""
+                        UPDATE players
+                        SET data = %s
+                        WHERE id = %s
+                    """, (json.dumps(player_data), player_id))
+                    conn.commit()
+                    
+                    return {"description": description}
+                except Exception as ollama_error:
+                    logger.error(f"Ollama generation error: {ollama_error}")
+                    raise
             
             except Exception as e:
                 # Fallback description if generation fails
                 logger.error(f"Description generation failed: {e}")
                 fallback_descriptions = [
-                    f"A talented {player.get('position', 'player')} with a passion for the game.",
-                    f"Bringing skill and determination to {player.get('team', 'the team')}.",
+                    f"A talented {position} with a passion for the game.",
+                    f"Bringing skill and determination to {player_data.get('team', 'the team')}.",
                     "A rising star in baseball, known for precision and teamwork."
                 ]
                 return {"description": random.choice(fallback_descriptions)}
-        
-        except httpx.HTTPStatusError as e:
-            logger.error(f"HTTP Status Error: {e}")
-            raise HTTPException(status_code=e.response.status_code, detail=str(e))
-        except httpx.RequestError as e:
-            logger.error(f"Request Error: {e}")
+                
+        except Exception as e:
+            logger.error(f"Database error: {e}")
             raise HTTPException(status_code=500, detail=str(e))
+    else:
+        logger.error("No database connection")
+        raise HTTPException(status_code=500, detail="Database connection failed")
