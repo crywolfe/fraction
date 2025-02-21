@@ -2,13 +2,14 @@ import httpx
 from typing import List, Dict, Any
 from logging_config import logger
 
+
 def standardize_player_keys(players: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Standardize player dictionary keys to snake_case.
-    
+
     Args:
         players: List of player dictionaries
-    
+
     Returns:
         List of players with standardized keys
     """
@@ -17,10 +18,11 @@ def standardize_player_keys(players: List[Dict[str, Any]]) -> List[Dict[str, Any
         for player in players
     ]
 
+
 async def fetch_external_players() -> List[Dict[str, Any]]:
     """
     Fetch players from external API.
-    
+
     Returns:
         List of players or empty list if fetch fails
     """
@@ -38,5 +40,5 @@ async def fetch_external_players() -> List[Dict[str, Any]]:
             logger.error(f"Request Error: {e}")
         except Exception as e:
             logger.error(f"Unexpected error fetching players: {e}")
-        
+
         return []

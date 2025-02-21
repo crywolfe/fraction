@@ -19,6 +19,7 @@ app = FastAPI()
 async def read_root():
     return {"message": "Hello World from Backend"}
 
+...
 @app.get("/players")
 async def get_players(
     page: int = Query(1, ge=1), page_size: int = Query(10, ge=1, le=100)
@@ -26,12 +27,28 @@ async def get_players(
     logger.info(f"Received request for players - Page: {page}, Page Size: {page_size}")
 
     try:
-        # Fetch players from external API
-        external_players = await fetch_external_players()
-        
-        # Store players in the database
-        if not store_players(conn, external_players):
-            raise HTTPException(status_code=500, detail="Failed to store players")
+        # Check if database is empty
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM players")
+        player_count = cursor.fetchone()[0]
+        cursor.close()
+
+        # If no players exist, fetch and populate
+        if player_count == 0:
+            logger.info("No players in database. Fetching and populating...")
+            
+            # Fetch players from external API
+            external_players = await fetch_external_players()
+            
+            # Standardize keys to snake_case
+            standardized_players = [
+                {k.lower().replace(" ", "_"): v for k, v in player.items()}
+                for player in external_players
+            ]
+
+            # Store players in the database using standardized data
+            if not store_players(conn, standardized_players):
+                raise HTTPException(status_code=500, detail="Failed to store players")
 
         # Fetch paginated players from the database
         result = fetch_paginated_players(conn, page, page_size)
@@ -42,6 +59,7 @@ async def get_players(
     except Exception as e:
         logger.error(f"Error in get_players: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+...
 
 @app.put("/players/{player_id}")
 async def update_player_route(player_id: int, player: Dict[str, Any] = Body(...)):
@@ -73,7 +91,7 @@ async def generate_player_description_route(player_id: int):
         raise HTTPException(status_code=404, detail="Player not found")
 
     player_name, position, data = player_record
-    
+    logger.info(f"Fetched player: {player_name}, Position: {position}, {player_record}")
     # Parse player data
     if isinstance(data, str):
         player_data = json.loads(data)

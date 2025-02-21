@@ -6,6 +6,8 @@ import ollama
 from database import conn, create_table
 from routes import app as routes_app
 from logging_config import logger
+from player_utils import fetch_external_players
+from database_operations import store_players
 
 # Configure Ollama
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
@@ -41,3 +43,19 @@ app.mount("/", routes_app)
 
 if conn:
     create_table(conn)
+
+@app.on_event("startup")
+async def populate_players():
+    """
+    Fetch players from external API and populate the database on startup.
+    """
+    if conn:
+        try:
+            players = await fetch_external_players()
+            if players:
+                store_players(conn, players)
+                logger.info(f"Successfully populated database with {len(players)} players")
+            else:
+                logger.warning("No players fetched from external API")
+        except Exception as e:
+            logger.error(f"Error populating players: {e}")

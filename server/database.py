@@ -72,13 +72,15 @@ def create_table(conn):
                 on_base_percentage NUMERIC,
                 slugging_percentage NUMERIC,
                 on_base_plus_slugging NUMERIC,
-                data JSONB  -- Store the rest of the player data as JSON
+                data JSONB,  -- Store the rest of the player data as JSON
+                UNIQUE (player_name, position)
             )
         """)
         conn.commit()
-        logger.info("Table 'players' created successfully")
+        logger.info("Table 'players' created successfully with unique constraint")
     except Exception as e:
         logger.error(f"The error '{e}' occurred")
+        conn.rollback()
 
 conn = create_connection()
 if conn:

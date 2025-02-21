@@ -33,37 +33,82 @@ def get_player_by_id(conn, player_id) -> Optional[Tuple]:
     else:
         return None
 
-def store_players(conn, standardized_players: list) -> bool:
+def store_players(conn, players: list) -> bool:
     """
-    Store players in the database.
-    
-    Args:
-        conn: Database connection
-        standardized_players: List of player dictionaries
-    
-    Returns:
-        Boolean indicating success or failure
+    Store players in the database with minimal processing.
     """
     if not conn:
         logger.error("No database connection")
         return False
 
+    logger.info(f"Attempting to store {len(players)} players")
+    
     cursor = conn.cursor()
     try:
-        for player in standardized_players:
-            name = player.get("name", "Unknown")
-            position = player.get("position", "Unknown")
-            logger.info(f"Player data before JSON conversion: {player}")
-            data = json.dumps(player)
+        for player in players:
+            # Basic key mapping
+            logger.info(f"Attempting to store {player} {player.get('player_name')}")
+            player_name = player.get('player_name') or player.get('name') or "Unknown"
+            position = player.get('position') or "Unknown"
+            
+            # Safely convert numeric values
+            def safe_int(value):
+                try:
+                    return int(value) if value is not None else None
+                except (ValueError, TypeError):
+                    return None
+            
+            def safe_float(value):
+                try:
+                    return float(value) if value is not None else None
+                except (ValueError, TypeError):
+                    return None
+            
+            # Insert player with direct mapping and RETURNING clause to get the generated id
             cursor.execute(
                 """
-                INSERT INTO players (player_name, position, data)
-                VALUES (%s, %s, %s)
+                INSERT INTO players (
+                    player_name, position,
+                    games, hits, at_bat, runs,
+                    double_2b, third_baseman, home_run,
+                    run_batted_in, a_walk, strikeouts,
+                    stolen_base, caught_stealing,
+                    avg, on_base_percentage,
+                    slugging_percentage, on_base_plus_slugging,
+                    data
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, 
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                )
+                RETURNING id
                 """,
-                (name, position, data),
+                (
+                    player_name, position,
+                    safe_int(player.get('games')),
+                    safe_int(player.get('hits')),
+                    safe_int(player.get('at-bat') or player.get('at_bat')),
+                    safe_int(player.get('runs')),
+                    safe_int(player.get('double_(2b)')),
+                    safe_int(player.get('third_baseman')),
+                    safe_int(player.get('home_run')),
+                    safe_int(player.get('run_batted_in')),
+                    safe_int(player.get('a_walk')),
+                    safe_int(player.get('strikeouts')),
+                    safe_int(player.get('stolen_base')),
+                    safe_int(player.get('caught_stealing')),
+                    safe_float(player.get('avg')),
+                    safe_float(player.get('on-base_percentage') or player.get('on_base_percentage')),
+                    safe_float(player.get('slugging_percentage')),
+                    safe_float(player.get('on-base_plus_slugging') or player.get('on_base_plus_slugging')),
+                    json.dumps(player)
+                )
             )
-        conn.commit()
-        logger.info("Players stored in the database")
+            # Commit after each transaction
+            inserted_id = cursor.fetchone()[0]
+            conn.commit()
+            logger.info(f"Successfully stored player with id: {inserted_id}, {player}")
+
+        logger.info(f"Successfully stored {len(players)} players")
         return True
     except Exception as e:
         logger.error(f"Database error: {e}")
@@ -71,7 +116,6 @@ def store_players(conn, standardized_players: list) -> bool:
         return False
     finally:
         cursor.close()
-
 def fetch_paginated_players(conn, page: int, page_size: int) -> Dict[str, Any]:
     """
     Fetch paginated players from the database.

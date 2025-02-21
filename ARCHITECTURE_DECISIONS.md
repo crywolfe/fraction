@@ -22,7 +22,7 @@
        
        # Prepare prompt for description generation
        prompt = f"""Generate a concise 280-character description for a player with these details:
-       Name: {player.name}
+       Name: {player.player_name}
        Position: {player.position}
        Team: {player.team}
        
