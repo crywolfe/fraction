@@ -21,6 +21,8 @@ services:
       - baseball-net
     command: >
       docker-entrypoint.sh postgres
+    ports:
+      - "5432:5432"
 
   backend:
     build: 

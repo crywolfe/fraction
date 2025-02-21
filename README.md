@@ -140,6 +140,26 @@ Useful psql commands:
 
 Note: Use `postgres` as the service name when using docker-compose exec, not `db`.
 
+### Connecting with DBeaver
+
+To connect to the PostgreSQL database using DBeaver, follow these steps:
+
+1.  Create a new connection in DBeaver.
+2.  Select "PostgreSQL" as the database type.
+3.  Enter the following connection details:
+
+    *   **Host:** `localhost`
+    *   **Port:** `5432`
+    *   **Database:** `baseball_db`
+    *   **Username:** `baseball_admin`
+    *   **Password:** `baseball_secret`
+    *   **JDBC URL:** `jdbc:postgresql://localhost:5432/baseball_db`
+
+4.  Test the connection to ensure it is successful.
+5.  Click "Finish" to create the connection.
+
+You should now be able to browse and query the database using DBeaver.
+
 ## Security Considerations
 
 - Never commit sensitive information like actual database passwords to version control
