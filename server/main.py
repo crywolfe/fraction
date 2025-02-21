@@ -1,29 +1,25 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from caching import CacheMiddleware
-import logging
 import os
 import ollama
 from database import conn, create_table
 from routes import app as routes_app
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+from logging_config import logger
 
 # Configure Ollama
-OLLAMA_HOST = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 ollama.host = OLLAMA_HOST
 
 # Pull the model on startup
 try:
-    logger.info("Pulling Llama3.2 model...")
-    ollama.pull('llama3.2')
-    logger.info("Successfully pulled Llama3.2 model")
+    logger.info(f"Pulling llama3.2:1b model from host: {OLLAMA_HOST}")
+    ollama.pull("llama3.2:1b")
+    logger.info("Successfully pulled llama3.2:1b model")
 except Exception as e:
-    logger.error(f"Failed to pull Llama3.2 model: {e}")
+    logger.error(f"Failed to pull llama3.2:1b model: {e}")
+    # Add more detailed error logging
+    logger.exception("Detailed error pulling Ollama model")
 
 app = FastAPI()
 

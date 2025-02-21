@@ -31,7 +31,7 @@
        try:
            # Generate description using Ollama
            response = ollama.chat(
-               model='llama3.2:3b',
+               model='llama3.2:1b',
                messages=[{'role': 'user', 'content': prompt}]
            )
            
@@ -87,7 +87,7 @@
 ### Docker and Deployment Considerations
 1. Update `server/Dockerfile`
    - Ensure Ollama is installed
-   - Pull llama3.2:3b model during build
+   - Pull llama3.2:1b model during build
 
 2. Update `docker-compose.yml`
    - Add Ollama service or volume mount for model

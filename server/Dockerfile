@@ -13,14 +13,14 @@ COPY requirements.txt .
 RUN apt-get update && apt-get install -y postgresql-client
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the entire project
-COPY . .
-
-# Expose the port the app runs on
-EXPOSE 8000
+# Copy the entire project and preserve permissions
+COPY --chown=0:0 . .
 
 # Make the script executable
 RUN chmod +x wait-for-db.sh
+
+# Expose the port the app runs on
+EXPOSE 8000
 
 # Command to run the application
 CMD ["./wait-for-db.sh", "uvicorn", "server.main:app", "--host", "0.0.0.0", "--port", "8000"]
