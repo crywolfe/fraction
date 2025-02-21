@@ -13,19 +13,19 @@ def setup_logging():
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
 
-    # Create a rotating file handler for detailed logs
-    file_handler = RotatingFileHandler(
-        os.path.join(log_dir, 'llm_generation.log'),
-        maxBytes=10*1024*1024,  # 10 MB
-        backupCount=5
-    )
-    file_handler.setLevel(logging.INFO)
-    file_handler.setFormatter(logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    ))
+    # # Create a rotating file handler for detailed logs
+    # file_handler = RotatingFileHandler(
+    #     os.path.join(log_dir, 'llm_generation.log'),
+    #     maxBytes=10*1024*1024,  # 10 MB
+    #     backupCount=5
+    # )
+    # file_handler.setLevel(logging.INFO)
+    # file_handler.setFormatter(logging.Formatter(
+    #     '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    # ))
 
     # Add the file handler to the root logger
-    logging.getLogger().addHandler(file_handler)
+    # logging.getLogger().addHandler(file_handler)
 
     return logging.getLogger(__name__)
 
