@@ -45,8 +45,8 @@ def store_players(conn, players: List[Dict[str, Any]]) -> bool:
     try:
         for player in players:
             # Use 'player_name' key; fallback to 'name'
-            player_name = player.get("player_name") or player.get("name") or "Unknown"
-            position = player.get("position") or "Unknown"
+            player_name = player.get("player_name")
+            position = player.get("position")
             with conn.cursor() as cursor:
                 cursor.execute(
                     """
