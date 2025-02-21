@@ -15,18 +15,23 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     volumes:
+      - postgres_data:/var/lib/postgresql/data
       - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
     networks:
       - baseball-net
     command: >
-      bash -c "rm -rf /var/lib/postgresql/data/* && docker-entrypoint.sh postgres"
+      docker-entrypoint.sh postgres
 
   backend:
     build: 
       context: ./server
     working_dir: /app
-    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    command: ./wait-for-db.sh uvicorn main:app --host 0.0.0.0 --port 8000
     environment:
+      - DB_HOST=postgres
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
       - DB_URL=postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
       - OLLAMA_HOST=http://ollama:11434
     depends_on:
@@ -34,6 +39,7 @@ services:
       - ollama
     networks:
       - baseball-net
+    restart: always
     ports:
       - "8000:8000"
     extra_hosts:
